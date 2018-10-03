@@ -1,0 +1,67 @@
+<html>
+
+<head>
+    <title>Hangman or Something</title>
+    <script src="wordsByLengthWithFrequency.js"></script>
+    <script src="contractionsWithFrequency.js"></script>
+    <script src="likelyNextWords.js"></script>
+    <script src="lib/hangman.js"></script>
+    <style>
+        #board {
+            display: grid;
+            /*grid-template-columns: repeat(14, 0fr);
+            grid-template-rows: repeat(4, 0fr);*/
+            grid-auto-columns: min-content;
+            grid-auto-rows: min-content;
+            align-self: center;    
+         }
+
+        #board>div {
+            background-color: green;
+            border: 2px solid black;
+            text-align: center;
+            align-items: center;
+            justify-content: center;
+            display: flex;
+            font-family: Arial, Helvetica, sans-serif;
+            font-weight: 600;
+            font-size: 3.8vw;
+            width: 4vw;
+            height: 6vw;
+            text-transform: uppercase;
+        }
+
+        #board>div:focus {
+            outline: none;
+            border-color: #9ecaed;
+            box-shadow: 0 0 10px #9ecaed;
+        }
+
+        #board>div:not(:empty) {
+            background-color: white;
+        }
+
+        #button {
+            font-size: 2.8vw;
+            font-family: Arial, Helvetica, sans-serif
+        }
+
+       /* #message {
+            visibility: hidden;
+        }*/
+    </style>
+</head>
+
+<body>
+    <div id="board">
+
+    </div>
+    <button id="button"></button>
+
+    <div id="message">
+
+    </div>
+
+</body>
+
+</html>
