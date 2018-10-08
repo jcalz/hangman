@@ -315,8 +315,8 @@ class Puzzle {
                 }
             })
 
-            // determine new probabilities for each word
-            this.wordsAndPossibleSolutions.
+        // determine new probabilities for each word
+        this.wordsAndPossibleSolutions.
             forEach((wps, wpsindex) => {
 
                 let freqSum = 0;
@@ -341,7 +341,6 @@ class Puzzle {
     }
 
 }
-
 
 function sortBy<T, U>(array: T[], map: (x: T) => U) {
     const cmp = (a: U, b: U) => (a < b) ? -1 : (b < a) ? 1 : 0
@@ -400,6 +399,7 @@ interface LetterDivElement extends HTMLDivElement {
 }
 const letterDivs: LetterDivElement[] = [];
 const letterDivRows: LetterDivElement[][] = [];
+const guessedLetterDivs = {} as Record<Letter, HTMLDivElement>;
 
 let currentPuzzle: Puzzle | undefined;
 let bestLetterGuess: Letter | undefined;
@@ -415,7 +415,7 @@ function initializePage() {
     const numColumns = 14;
     const board = getDivById("board");
     const message = getDivById("message");
-
+    const guesses = getDivById("guesses");
     const num = numRows * numColumns
 
     for (let r = 0, i = 0; r < numRows; r++) {
@@ -432,6 +432,7 @@ function initializePage() {
             letterDivRows[r][c] = div;
             letterDivs[i] = div;
             div.setAttribute('tabIndex', '0');
+            div.classList.add('letter');
             div.style.gridRowStart = "" + r + 1;
             div.style.gridColumnStart = "" + c + 1;
             div.addEventListener('click', () => {
@@ -449,6 +450,18 @@ function initializePage() {
             board.appendChild(div);
         }
     }
+
+    letters.slice().sort().forEach((c, i) => {
+        const div = document.createElement('div');
+        div.setAttribute('tabIndex', '0');
+        div.classList.add('letter');
+        div.textContent = c;
+        div.style.gridColumnStart = "" + (i + 1);
+        guesses.appendChild(div);
+        guessedLetterDivs[c] = div;
+    }
+    );
+
     board.addEventListener("keydown", event => {
 
         const div = event.target;
@@ -495,6 +508,7 @@ function initializePage() {
             const puzzleString = letterDivRows.map(r => r.map(e => (e.textContent || '').charAt(0)).map(
                 c => c === '' ? ' ' : c.match(/[a-z]/i) ? placeHolder : c).join('')).join(' ');
             currentPuzzle = new Puzzle(puzzleString);
+            letters.forEach(l => guessedLetterDivs[l].classList.remove('badGuess', 'goodGuess'));
             letterDivs.forEach(d => d.textContent = (!d.textContent) ? '' : (d.textContent === ' ') ? '' : d.textContent.match(/[a-z]/i) ? ' ' : d.textContent);
         }
 
@@ -503,17 +517,24 @@ function initializePage() {
             const puzzleString = letterDivRows.map(r => r.map(e => (e.textContent || '').charAt(0)).map(
                 c => c === '' ? ' ' : c === ' ' ? placeHolder : c).join('')).join(' ');
             numberOfGuesses = puzzleString.split("").filter(x => x === bestLetterGuess).length;
+
             if (numberOfGuesses === 0) {
                 message.textContent += 'Darn, there is no "' + bestLetterGuess + '" in the puzzle.  \n'
+                guessedLetterDivs[bestLetterGuess].classList.add('badGuess');
+            } else {
+                guessedLetterDivs[bestLetterGuess].classList.add('goodGuess');
             }
             currentPuzzle.update(bestLetterGuess, puzzleString);
         }
 
 
         bestLetterGuess = currentPuzzle.bestLetterGuess();
+        letters.forEach(l => { guessedLetterDivs[l].classList.remove('currentGuess') });
+
         message.textContent += 'I think it\'s "' + currentPuzzle.bestSolution().trim().replace(/\s+/g, ' ') + '".';
 
         if (bestLetterGuess) {
+            guessedLetterDivs[bestLetterGuess].classList.add('currentGuess');
             button.textContent = "I guess \"" + bestLetterGuess + "\". Click here when done";
         } else {
             button.textContent = "Done!  " + initButtonText;
@@ -530,6 +551,3 @@ function initializePage() {
 
 
 window.addEventListener("load", initializePage);
-
-
-// letterDivRows.map(r => r.map(e => (e.textContent+' ').toUpperCase().charAt(0)).join("")).join(" ");

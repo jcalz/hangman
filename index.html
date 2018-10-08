@@ -7,29 +7,64 @@
     <script src="likelyNextWords.js"></script>
     <script src="lib/hangman.js"></script>
     <style>
-        #board {
+
+        body {
+            font-family: Arial, Helvetica, sans-serif
+        }
+
+        #game {
+            display: flex;
+            flex-direction: column;
+        }
+
+        #board,
+        #guesses {
             display: grid;
-            /*grid-template-columns: repeat(14, 0fr);
-            grid-template-rows: repeat(4, 0fr);*/
             grid-auto-columns: min-content;
             grid-auto-rows: min-content;
-            align-self: center;    
-         }
+            align-self: center;
+        }
 
-        #board>div {
-            background-color: green;
+        .letter {
             border: 2px solid black;
             text-align: center;
             align-items: center;
             justify-content: center;
             display: flex;
-            font-family: Arial, Helvetica, sans-serif;
             font-weight: 600;
             font-size: 3.8vw;
             width: 4vw;
             height: 6vw;
             text-transform: uppercase;
         }
+
+        #board>div {
+            background-color: green;
+        }
+
+        #guesses>div {
+            background-color: white;
+        }
+
+        #guesses>div.currentGuess {
+            background-color: yellow;
+            box-shadow: 0 0 20px yellow;
+        }
+
+        #guesses>div.goodGuess {
+            background-color: gray;
+        }
+
+        #guesses>div.badGuess {
+            background-color: darkgrey;
+            color: red;
+        }
+
+        #guesses>.letter {
+            font-size: 1.9vw;
+            width: 2vw;
+            height: 3vw;
+         }
 
         #board>div:focus {
             outline: none;
@@ -41,27 +76,34 @@
             background-color: white;
         }
 
+            
         #button {
-            font-size: 2.8vw;
-            font-family: Arial, Helvetica, sans-serif
+            font-size: 2vw;
+            width: 50vw;
+            margin: auto;
         }
 
-       /* #message {
-            visibility: hidden;
-        }*/
+        #message {
+            margin: auto;
+        }
     </style>
 </head>
 
 <body>
-    <div id="board">
+    <div id="game">
+        <div id="board">
+
+        </div>
+        <button id="button"></button>
+
+        <div id="guesses">
+
+        </div>
+        <div id="message">
+
+        </div>
 
     </div>
-    <button id="button"></button>
-
-    <div id="message">
-
-    </div>
-
 </body>
 
 </html>
