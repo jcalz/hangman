@@ -402,7 +402,6 @@ const guessedLetterDivs = {} as Record<Letter, HTMLDivElement>;
 
 let currentPuzzle: Puzzle | undefined;
 let bestLetterGuess: Letter | undefined;
-let oopsMode: boolean = false;
 
 function getDivById(divId: string) {
     const div = document.getElementById(divId);
@@ -437,7 +436,7 @@ function initializePage() {
             div.style.gridColumnStart = "" + c + 1;
             div.addEventListener('click', () => {
                 div.focus();
-                if (currentPuzzle && bestLetterGuess && !oopsMode) {
+                if (currentPuzzle && bestLetterGuess && !oopsMode()) {
                     if (div.textContent === ' ') {
                         div.textContent = bestLetterGuess;
                     } else if (div.textContent === bestLetterGuess) {
@@ -457,6 +456,7 @@ function initializePage() {
         div.classList.add('letter');
         div.textContent = c;
         div.style.gridColumnStart = "" + (i + 1);
+        div.style.gridRowStart = "1";
         guesses.appendChild(div);
         guessedLetterDivs[c] = div;
     }
@@ -473,8 +473,8 @@ function initializePage() {
         const i = div.index;
         const next = letterDivs[mod(i + 1, num)];
         const prev = letterDivs[mod(i - 1, num)];
-        const blank = oopsMode ? ' ' : '';
-        if (!currentPuzzle || (oopsMode && div.textContent !== '')) {
+        const blank = oopsMode() ? ' ' : '';
+        if (!currentPuzzle || (oopsMode() && div.textContent !== '')) {
             const key = event.key.toUpperCase();
             if (
                 (event.key.length === 1) &&
@@ -503,13 +503,50 @@ function initializePage() {
     const initButtonText = "Make a puzzle and click here when done."
     const button = document.getElementById('button') as HTMLButtonElement;
 
-    const initOopsText = "Oops, there's a mistake in the puzzle!"
     const oopsButton = document.getElementById('oopsButton') as HTMLButtonElement;
+    function oopsMode() {
+        return !!currentPuzzle && oopsButton.classList.contains('invisible');
+    }
 
-    const makeGuess = () => {
-        if (!currentPuzzle) return;
+    button.textContent = initButtonText;
+    button.addEventListener('click', () => {
+        message.textContent = "";
+        letters.forEach(l => { guessedLetterDivs[l].classList.remove('currentGuess') });
+        const initialOopsMode = oopsMode();
 
-        message.textContent += 'I think it\'s "' + currentPuzzle.bestSolution().trim().replace(/\s+/g, ' ') + '".';
+        if (!currentPuzzle) {
+            // turn letters into placeholders and blanks into spaces
+            const puzzleString = letterDivRows.map(r => r.map(e => (e.textContent || '').charAt(0)).map(
+                c => c === '' ? ' ' : c.match(/[a-z]/i) ? placeHolder : c).join('')).join(' ');
+            currentPuzzle = new Puzzle(puzzleString);
+            letters.forEach(l => guessedLetterDivs[l].classList.remove('badGuess', 'goodGuess'));
+            letterDivs.forEach(d => d.textContent = (!d.textContent) ? '' : (d.textContent === ' ') ? '' : d.textContent.match(/[a-z]/i) ? ' ' : d.textContent);
+        } else if (initialOopsMode) {
+            const puzzleString = letterDivRows.map(r => r.map(e => (e.textContent || '').charAt(0)).map(
+                c => c === '' ? ' ' : c === ' ' ? placeHolder : c).join('')).join(' ');
+            const guessedLetters = currentPuzzle.guessedLetters;
+            currentPuzzle = new Puzzle(puzzleString, guessedLetters);
+            letters.forEach(l => guessedLetterDivs[l].classList.remove('badGuess', 'goodGuess'));
+            letters.filter(l => guessedLetters[l]).forEach(l => guessedLetterDivs[l].classList.add(puzzleString.includes(l) ? 'goodGuess' : 'badGuess'));
+        }
+
+        if (!initialOopsMode) {
+            if (bestLetterGuess) {
+                const puzzleString = letterDivRows.map(r => r.map(e => (e.textContent || '').charAt(0)).map(
+                    c => c === '' ? ' ' : c === ' ' ? placeHolder : c).join('')).join(' ');
+                const numberOfGuesses = puzzleString.split("").filter(x => x === bestLetterGuess).length;
+
+                if (numberOfGuesses === 0) {
+                    message.textContent += 'Darn, there is no "' + bestLetterGuess + '" in the puzzle.  \n'
+                    guessedLetterDivs[bestLetterGuess].classList.add('badGuess');
+                } else {
+                    guessedLetterDivs[bestLetterGuess].classList.add('goodGuess');
+                }
+                currentPuzzle.update(bestLetterGuess, puzzleString);
+            }
+
+            bestLetterGuess = currentPuzzle.bestLetterGuess();
+        }
 
         if (bestLetterGuess) {
             guessedLetterDivs[bestLetterGuess].classList.add('currentGuess');
@@ -521,60 +558,16 @@ function initializePage() {
             oopsButton.classList.add("invisible");
         }
 
-    }
-
-    button.textContent = initButtonText;
-    button.addEventListener('click', () => {
-        message.textContent = "";
-
-        if (!currentPuzzle) {
-            // turn letters into placeholders and blanks into spaces
-            const puzzleString = letterDivRows.map(r => r.map(e => (e.textContent || '').charAt(0)).map(
-                c => c === '' ? ' ' : c.match(/[a-z]/i) ? placeHolder : c).join('')).join(' ');
-            currentPuzzle = new Puzzle(puzzleString);
-            letters.forEach(l => guessedLetterDivs[l].classList.remove('badGuess', 'goodGuess'));
-            letterDivs.forEach(d => d.textContent = (!d.textContent) ? '' : (d.textContent === ' ') ? '' : d.textContent.match(/[a-z]/i) ? ' ' : d.textContent);
+        if (currentPuzzle) {
+            message.textContent += 'I think it\'s "' + currentPuzzle.bestSolution().trim().replace(/\s+/g, ' ') + '".';
         }
-
-        let numberOfGuesses: number | undefined;
-        if (bestLetterGuess) {
-            const puzzleString = letterDivRows.map(r => r.map(e => (e.textContent || '').charAt(0)).map(
-                c => c === '' ? ' ' : c === ' ' ? placeHolder : c).join('')).join(' ');
-            numberOfGuesses = puzzleString.split("").filter(x => x === bestLetterGuess).length;
-
-            if (numberOfGuesses === 0) {
-                message.textContent += 'Darn, there is no "' + bestLetterGuess + '" in the puzzle.  \n'
-                guessedLetterDivs[bestLetterGuess].classList.add('badGuess');
-            } else {
-                guessedLetterDivs[bestLetterGuess].classList.add('goodGuess');
-            }
-            currentPuzzle.update(bestLetterGuess, puzzleString);
-        }
-
-
-        bestLetterGuess = currentPuzzle.bestLetterGuess();
-        letters.forEach(l => { guessedLetterDivs[l].classList.remove('currentGuess') });
-
-        makeGuess();
 
     })
 
-    oopsButton.textContent = initOopsText;
     oopsButton.addEventListener("click", () => {
-        oopsMode = (!!currentPuzzle) && !oopsMode;
-        oopsButton.textContent = oopsMode ? "Press again when done fixing puzzle" : initOopsText;
-        if (!currentPuzzle) return; // oops mode only makes sense with a current puzzle
-        if (oopsMode) return;
-        // turn spaces into placeholders and blanks into spaces
-        const puzzleString = letterDivRows.map(r => r.map(e => (e.textContent || '').charAt(0)).map(
-            c => c === '' ? ' ' : c === ' ' ? placeHolder : c).join('')).join(' ');
-        const guessedLetters = currentPuzzle.guessedLetters;
-        currentPuzzle = new Puzzle(puzzleString, guessedLetters);
-        letters.forEach(l => guessedLetterDivs[l].classList.remove('badGuess', 'goodGuess'));
-        letters.filter(l => guessedLetters[l]).forEach(l => guessedLetterDivs[l].classList.add(puzzleString.includes(l) ? 'goodGuess' : 'badGuess'));
+        oopsButton.classList.add("invisible");
+        button.textContent = "Fix the puzzle and click here when done";
 
-        message.textContent = "";
-        makeGuess();
     })
 
 

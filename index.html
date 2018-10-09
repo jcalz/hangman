@@ -7,7 +7,6 @@
     <script src="likelyNextWords.js"></script>
     <script src="lib/hangman.js"></script>
     <style>
-
         body {
             font-family: Arial, Helvetica, sans-serif
         }
@@ -64,7 +63,7 @@
             font-size: 1.9vw;
             width: 2vw;
             height: 3vw;
-         }
+        }
 
         #board>div:focus {
             outline: none;
@@ -76,12 +75,18 @@
             background-color: white;
         }
 
-            
-        #button, #oopsButton {
+
+        #button {
             font-size: 2vw;
-            width: 50vw;
+            width: 60vw;
             margin: auto;
         }
+
+        #oopsButton {
+            grid-column-start: 27;
+            grid-row-start: 1;
+        }
+
 
         .invisible {
             visibility: hidden;
@@ -98,12 +103,12 @@
         <div id="board">
 
         </div>
+
         <button id="button"></button>
 
         <div id="guesses">
-
+                <button id="oopsButton" tabindex="0" class="invisible letter">!</button>
         </div>
-        <button id="oopsButton" class="invisible">Oops!</button>
         <div id="message">
 
         </div>
