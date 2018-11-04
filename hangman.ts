@@ -1,15 +1,6 @@
-//import wordsByLengthWithFrequency from './wordsByLengthWithFrequency'
-// from http://norvig.com/google-books-common-words.txt
-// re=/([A-Z]+)\s*(\d+)/;ret=[[]];document.body.textContent.split('\n').map(s=>s.match(re)).filter(s=>s).map(s => ({word:s[1], freq:parseInt(s[2])})).forEach(r => (ret[r.word.length] = ret[r.word.length] || []).push(r));document.body.textContent=JSON.stringify(ret);
 
 
-// import likelyNextWords from './likelyNextWords'
-// from https://www.ngrams.info/coca/download/w2_.zip
-// Davies, Mark. (2011) N-grams data from the Corpus of Contemporary American English (COCA). Downloaded from http://www.ngrams.info on September 30, 2018.
-// likelyNextWords:
-// ret={}; document.body.innerText.split('\n').map(s => s.split('\t').map(x => x.toUpperCase())).filter(([f, w1, w2]) => (f > 75) && !(w1+w2).match(/[^a-z']/i)).forEach(([f, w1, w2])=>(ret[w1] = ret[w1] || [], ret[w1].push(w2))); document.body.textContent=JSON.stringify(ret)
-// lilelyPrevWords:
-// ret={}; document.body.innerText.split('\n').map(s => s.split('\t').map(x => x.toUpperCase())).filter(([f, w1, w2]) => (f > 75) && !(w1+w2).match(/[^a-z']/i)).forEach(([f, w1, w2])=>(ret[w2] = ret[w2] || [], ret[w2].push(w1))); document.body.textContent=JSON.stringify(ret)
+
 
 
 interface WordAndFrequency {
@@ -26,12 +17,31 @@ type Letter = typeof letters[number];
 const placeHolder = '*';
 type PlaceHolder = typeof placeHolder;
 
+
+//import wordsByLengthWithFrequency from './wordsByLengthWithFrequency'
+// from http://norvig.com/google-books-common-words.txt
+// re=/([A-Z]+)\s*(\d+)/;ret=[[]];document.body.textContent.split('\n').map(s=>s.match(re)).filter(s=>s).map(s => ({word:s[1], freq:parseInt(s[2])})).forEach(r => (ret[r.word.length] = ret[r.word.length] || []).push(r));document.body.textContent=JSON.stringify(ret);
 declare const wordsByLengthWithFrequency: WordAndFrequency[][];
 
 declare const contractionsWithFrequency: WordAndFrequency[];
 
+// import likelyNextWords from './likelyNextWords'
+// from https://www.ngrams.info/coca/download/w2_.zip
+// Davies, Mark. (2011) N-grams data from the Corpus of Contemporary American English (COCA). Downloaded from http://www.ngrams.info on September 30, 2018.
+// likelyNextWords:
+// ret={}; document.body.innerText.split('\n').map(s => s.split('\t').map(x => x.toUpperCase())).filter(([f, w1, w2]) => (f > 75) && !(w1+w2).match(/[^a-z']/i)).forEach(([f, w1, w2])=>(ret[w1] = ret[w1] || [], ret[w1].push(w2))); document.body.textContent=JSON.stringify(ret)
+// lilelyPrevWords:
+// ret={}; document.body.innerText.split('\n').map(s => s.split('\t').map(x => x.toUpperCase())).filter(([f, w1, w2]) => (f > 75) && !(w1+w2).match(/[^a-z']/i)).forEach(([f, w1, w2])=>(ret[w2] = ret[w2] || [], ret[w2].push(w1))); document.body.textContent=JSON.stringify(ret)
 declare const likelyNextWords: { [k: string]: string[] | undefined };
 declare const likelyPrevWords: { [k: string]: string[] | undefined };
+
+
+// import bigramsWithFrequency from './bigramsWithFrequency'
+// from https://gist.githubusercontent.com/lydell/c439049abac2c9226e53/raw/4cfe39fd90d6ad25c4e683b6371009f574e1177f/bigrams.json
+// const fwd = {}; const bak = {}; JSON.parse(document.body.innerText).forEach(([[a,b],freq])=>{ a=a.toUpperCase(); b=b.toUpperCase(); fwd[a] = fwd[a] || {}; bak[b] = bak[b] || {}; fwd[a][b] = freq; bak[b][a] = freq; } ); document.body.textContent = "const forwardBigramFrequency = "+JSON.stringify(fwd)+";\nconst backwardBigramFrequency = "+JSON.stringify(bak);declare const bigramsWithFrequency: BigramWithFrequency[];
+
+declare const forwardBigramFrequency: Record<Letter, Record<Letter, number>>;
+declare const backwardBigramFrequency: Record<Letter, Record<Letter, number>>;
 
 // get words all uppercase or something
 function wordsAndFrequencies(length: number): WordAndFrequency[] {
@@ -193,7 +203,8 @@ class Puzzle {
             const wps = this.wordsAndPossibleSolutions[i];
             wps.possibleSolutions = wps.possibleSolutions.filter(solutionStillPossible(wps));
 
-            if (wps.possibleSolutions.length === 0) {
+
+            if (wps.possibleSolutions.filter(wps => !wps.word.includes(placeHolder)).length === 0) {
                 // we've run out of known contractions so let's try each piece of the word separately
                 if (wps.puzzle.indexOf("'") !== -1) {
                     // let's decontractify this thing
@@ -214,7 +225,43 @@ class Puzzle {
                 }
 
                 console.log("Oh no I have no idea what \"" + wps.puzzle + "\" is");
-                wps.possibleSolutions.push({ word: wps.puzzle, freq: 1 });
+         
+                // at this point we should guess based on bigrams?
+                // find any known letters and look at subsequent and previous letter and make some
+                // probabilistic guesses based on unguessed letters, right?
+
+                wps.possibleSolutions = [];
+                const unguessedLetters = letters.filter(l => !(l in this.guessedLetters))
+                wps.puzzle.split('').forEach((c, i) => {
+                    if (c !== placeHolder) return;
+                    const prevLetter = (i==0) ? placeHolder : wps.puzzle.charAt(i - 1) as Letter | typeof placeHolder;
+                    const nextLetter = (i==wps.puzzle.length-1) ? placeHolder : wps.puzzle.charAt(i + 1) as Letter | typeof placeHolder;                    
+                    if ((prevLetter === placeHolder) && (nextLetter === placeHolder)) return;
+                    const possibleSolutions = {} as Record<Letter, WordAndFrequency>;
+                    
+                    unguessedLetters.forEach(l => possibleSolutions[l] = {freq: 1, word: wps.puzzle.slice(0,i)+l+wps.puzzle.slice(i+1)});
+
+                    if (prevLetter !== placeHolder) {                        
+                        unguessedLetters.forEach(l => possibleSolutions[l].freq *= forwardBigramFrequency[prevLetter][l]);
+                    }
+                    if (nextLetter !== placeHolder) {
+                        unguessedLetters.forEach(l => possibleSolutions[l].freq *= backwardBigramFrequency[nextLetter][l]);
+                    }
+
+                    const freqSum = unguessedLetters.reduce((s, l) => s + possibleSolutions[l].freq, 0);
+                    unguessedLetters.forEach(l => possibleSolutions[l].freq /= freqSum);
+
+                    unguessedLetters.forEach(l => wps.possibleSolutions.push(possibleSolutions[l]));
+
+                })
+                sortBy(wps.possibleSolutions, ps => -ps.freq);
+                console.log("POSSIBLE SOLUTIONS: \n"+wps.possibleSolutions.map(wps => wps.word + ": " + (wps.freq*100).toFixed(1)+"% ").join("\n")+"\n-------");                
+                
+
+                // this should probably not happen but maybe the word is completely unknown for some reason
+                if (wps.possibleSolutions.length === 0) {
+                    wps.possibleSolutions.push({ word: wps.puzzle, freq: 1 });
+                }
 
             }
 
